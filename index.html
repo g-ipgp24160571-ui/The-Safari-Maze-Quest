@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Zoo Explorer: The Safari Maze Quest</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, #1b3a20 0%, #0d1f11 60%, #050d07 100%);
+            color: #ffffff;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* HUD Overlay */
+        #hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-card {
+            background: rgba(20, 45, 25, 0.88);
+            border: 2px solid #52b788;
+            box-shadow: 0 0 25px rgba(82, 183, 136, 0.4), inset 0 0 15px rgba(212, 163, 89, 0.2);
+            padding: 12px 18px;
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
+
+        .btn-hud {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, rgba(82, 183, 136, 0.35) 0%, rgba(212, 163, 89, 0.35) 100%);
+            border: 2px solid #74c69d;
+            color: #ffffff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-hud:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(116, 198, 157, 0.8);
+            border-color: #f4a261;
+        }
+
+        .hud-title {
+            font-size: 11px;
+            color: #b7e4c7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(82, 183, 136, 0.5);
+        }
+
+        .hud-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d8f3dc;
+            margin-top: 3px;
+            text-shadow: 0 0 8px rgba(216, 243, 220, 0.8);
+        }
+
+        .crystal-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .crystal-slot {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 2px dashed #406048;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: rgba(0,0,0,0.5);
+            transition: all 0.4s ease;
+            color: #55705a;
+        }
+
+        .crystal-slot.active-s1 {
+            border-style: solid;
+            border-color: #52b788;
+            background: rgba(82, 183, 136, 0.3);
+            box-shadow: 0 0 15px #52b788;
+            color: #74c69d;
+        }
+
+        .crystal-slot.active-s2 {
+            border-style: solid;
+            border-color: #f4a261;
+            background: rgba(244, 162, 97, 0.3);
+            box-shadow: 0 0 15px #f4a261;
+            color: #f4a261;
+        }
+
+        .crystal-slot.active-s3 {
+            border-style: solid;
+            border-color: #e76f51;
+            background: rgba(231, 111, 81, 0.3);
+            box-shadow: 0 0 15px #e76f51;
+            color: #e76f51;
+        }
+
+        /* Color Badges & Tags */
+        .color-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+        .badge-green { background: rgba(82, 183, 136, 0.25); color: #74c69d; border: 1px solid #52b788; }
+        .badge-amber { background: rgba(244, 162, 97, 0.25); color: #f4a261; border: 1px solid #f4a261; }
+        .badge-terracotta { background: rgba(231, 111, 81, 0.25); color: #e76f51; border: 1px solid #e76f51; }
+
+        .key-cap {
+            background: linear-gradient(180deg, #2d5a36 0%, #17381f 100%);
+            border: 1px solid #74c69d;
+            color: #d8f3dc;
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 0 #2d6a4f;
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .instruction-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            text-align: left;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 500px) {
+            .instruction-grid { grid-template-columns: 1fr; }
+        }
+
+        .instruction-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(116, 198, 157, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .instruction-card h4 {
+            color: #74c69d;
+            margin-bottom: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Action Prompt */
+        #interaction-prompt {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(244, 162, 97, 0.95);
+            color: #1b261e;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 15px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 25px rgba(244, 162, 97, 0.9);
+            display: none;
+            z-index: 10;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.06); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 25, 14, 0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: linear-gradient(135deg, #1b3820 0%, #132a18 50%, #283618 100%);
+            border: 2px solid #74c69d;
+            border-radius: 18px;
+            width: 90%;
+            max-width: 560px;
+            padding: 28px;
+            box-shadow: 0 0 45px rgba(244, 162, 97, 0.35), inset 0 0 20px rgba(82, 183, 136, 0.2);
+            text-align: center;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            color: #f4a261;
+            font-size: 22px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 15px rgba(244, 162, 97, 0.8);
+        }
+
+        .modal-subtitle {
+            color: #b7e4c7;
+            font-size: 14px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 16px;
+            background: linear-gradient(90deg, rgba(244,162,97,0.18) 0%, rgba(82,183,136,0.18) 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #f4a261;
+            border-right: 1px solid rgba(82, 183, 136, 0.4);
+            margin-bottom: 20px;
+            text-align: left;
+            line-height: 1.5;
+            color: #f1f5f9;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-option {
+            background: linear-gradient(90deg, #1d3e23 0%, #284b2c 100%);
+            border: 1px solid #52b788;
+            color: #fff;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+        .btn-option:hover {
+            background: linear-gradient(90deg, #2d5a36 0%, #1d3e23 100%);
+            border-color: #f4a261;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(244, 162, 97, 0.5);
+        }
+
+        .btn-option.selected-correct {
+            background: rgba(82, 183, 136, 0.35) !important;
+            border-color: #52b788 !important;
+            color: #74c69d !important;
+            box-shadow: 0 0 15px #52b788 !important;
+        }
+
+        .btn-option.selected-wrong {
+            background: rgba(231, 111, 81, 0.35) !important;
+            border-color: #e76f51 !important;
+            color: #f4a261 !important;
+            box-shadow: 0 0 15px #e76f51 !important;
+        }
+
+        .feedback-box {
+            min-height: 45px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .feedback-box.correct {
+            display: block;
+            background: rgba(82, 183, 136, 0.2);
+            border: 1px solid #52b788;
+            color: #74c69d;
+        }
+
+        .feedback-box.incorrect {
+            display: block;
+            background: rgba(231, 111, 81, 0.2);
+            border: 1px solid #e76f51;
+            color: #f4a261;
+        }
+
+        .feedback-box.hint {
+            display: block;
+            background: rgba(233, 196, 106, 0.2);
+            border: 1px solid #e9c46a;
+            color: #f4a261;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .btn {
+            background: #f4a261;
+            color: #1b261e;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(244, 162, 97, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #74c69d;
+            color: #b7e4c7;
+            box-shadow: none;
+        }
+
+        .btn:hover {
+            opacity: 0.92;
+            transform: translateY(-2px);
+        }
+
+        /* Touch Controls for Mobile */
+        #touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            height: 120px;
+            pointer-events: none;
+            z-index: 20;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #joystick-zone {
+            width: 110px;
+            height: 110px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(116, 198, 157, 0.6);
+            border-radius: 50%;
+            position: relative;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-knob {
+            width: 44px;
+            height: 44px;
+            background: #f4a261;
+            border-radius: 50%;
+            position: absolute;
+            top: 33px;
+            left: 33px;
+            box-shadow: 0 0 15px #f4a261;
+            pointer-events: none;
+        }
+
+        #btn-mobile-interact {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(244, 162, 97, 0.9);
+            border: 2px solid #ffffff;
+            color: #1b261e;
+            font-weight: bold;
+            font-size: 11px;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(244, 162, 97, 0.6);
+            display: none;
+        }
+
+        /* Start / End Screens */
+        #start-screen, #end-screen {
+            background: radial-gradient(circle at center, #1b3820 0%, #0d1f11 60%, #050d07 100%);
+        }
+
+        .summary-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 14px;
+        }
+    </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+        <div style="display: flex; gap: 10px;">
+            <div class="hud-card">
+                <div class="hud-title">Current Objective</div>
+                <div class="hud-value" id="objective-text">Locate Sector 1 Ranger Station</div>
+            </div>
+            <button class="hud-card btn-hud" onclick="toggleInstructions()">📖 RANGER GUIDE</button>
+        </div>
+        <div class="hud-card" style="text-align: right;">
+            <div class="hud-title">Safari Animal Badges</div>
+            <div class="crystal-container">
+                <div class="crystal-slot" id="crystal-1" title="Sector 1: Savanna Badge">🦁</div>
+                <div class="crystal-slot" id="crystal-2" title="Sector 2: Jungle Badge">🐘</div>
+                <div class="crystal-slot" id="crystal-3" title="Sector 3: Reptile Haven Badge">🐊</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div class="modal" id="instructions-modal">
+        <div class="modal-box" style="max-width: 620px;">
+            <h2 class="modal-title" style="color: #f4a261;">📖 ZOO EXPLORER RANGER MANUAL</h2>
+            <p class="modal-subtitle">Master English Grammar to Repair Zoo Information Plaques</p>
+
+            <div class="instruction-grid">
+                <div class="instruction-card">
+                    <h4>🦁 Safari Mission</h4>
+                    <p style="font-size: 13px; color: #d8f3dc; line-height: 1.4;">
+                        Explore the zoo hedge maze to locate <strong>3 Safari Ranger Stations</strong>. Solve grammar puzzles to collect Animal Badges and unlock the wooden gates!
+                    </p>
+                </div>
+                <div class="instruction-card">
+                    <h4>🎮 Explorer Controls</h4>
+                    <p style="font-size: 12px; color: #d8f3dc; line-height: 1.6;">
+                        • Move: <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> or <span class="key-cap">↑</span><span class="key-cap">←</span><span class="key-cap">↓</span><span class="key-cap">→</span><br>
+                        • Camera: Drag mouse / right touch area<br>
+                        • Interact: <span class="key-cap">E</span> or Tap <span class="badge-amber">INTERACT</span> button
+                    </p>
+                </div>
+            </div>
+
+            <div class="instruction-card" style="margin-top: 12px;">
+                <h4 style="color: #f4a261;">🎨 Zoo Sector Curriculum Legend</h4>
+                <div style="font-size: 13px; color: #e2e8f0; line-height: 1.8; text-align: left; margin-top: 6px;">
+                    <div><span class="color-badge badge-green">SECTOR 1</span> <strong>Wh-Questions:</strong> Who (people/animals), Where (places), When (time).</div>
+                    <div><span class="color-badge badge-amber">SECTOR 2</span> <strong>Quantities:</strong> How many (countable), How much (uncountable).</div>
+                    <div><span class="color-badge badge-terracotta">SECTOR 3</span> <strong>Complex Phrases:</strong> Whose (ownership), Which (choice), How far (distance).</div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px; justify-content: center;">
+                <button class="btn" style="width: 100%; font-size: 15px;" onclick="toggleInstructions()">RESUME SAFARI</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contextual Interaction Prompt -->
+    <div id="interaction-prompt" onclick="triggerInteraction()">PRESS [E] OR TAP TO INSPECT PLAQUE</div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="touch-controls">
+        <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="btn-mobile-interact" onclick="triggerInteraction()">INSPECT</div>
+    </div>
+
+    <!-- Start Screen Modal -->
+    <div class="modal active" id="start-screen">
+        <div class="modal-box">
+            <h1 class="modal-title" style="background: linear-gradient(90deg, #74c69d, #f4a261, #e76f51); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🐾 Zoo Explorer</h1>
+            <p class="modal-subtitle">The Safari Maze Quest | Year 5 English Grammar</p>
+            
+            <div class="question-text">
+                <strong>Ranger Briefing:</strong><br>
+                Welcome Ranger! The zoo information plaques have missing question words. Navigate through 3 animal sectors to repair them and unlock all sanctuary gates!<br><br>
+                
+                <div style="margin-bottom: 10px;">
+                    <span class="color-badge badge-green">Sector 1</span> Savanna Zone (Wh-Questions)<br>
+                    <span class="color-badge badge-amber">Sector 2</span> Jungle Sanctuary (Quantities)<br>
+                    <span class="color-badge badge-terracotta">Sector 3</span> Reptile & Bird Haven (Complex Question Phrases)
+                </div>
+
+                <strong>Explorer Controls:</strong><br>
+                • <strong>PC:</strong> <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> to walk, Drag mouse to pan camera, <span class="key-cap">E</span> to inspect.<br>
+                • <strong>Mobile:</strong> Left Joystick to move, drag right area to look around, tap <span class="badge-amber">INSPECT</span>.
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleInstructions()">📖 RANGER MANUAL</button>
+                <button class="btn" style="flex: 2; font-size: 16px; padding: 15px;" onclick="startGame()">START SAFARI</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Modal -->
+    <div class="modal" id="challenge-modal">
+        <div class="modal-box">
+            <div class="modal-title" id="challenge-sector-title">Safari Information Plaque</div>
+            <div class="modal-subtitle" id="challenge-instruction">Restore the missing question word</div>
+            
+            <div class="question-text" id="challenge-question">Loading safari puzzle...</div>
+            
+            <div class="options-grid" id="options-container">
+                <!-- Dynamic Options Rendered Here -->
+            </div>
+
+            <div class="feedback-box" id="feedback-display"></div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="showHint()">💡 HINT</button>
+                <button class="btn" id="btn-next-q" style="display: none;" onclick="nextQuestion()">NEXT PLAQUE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div class="modal" id="end-screen">
+        <div class="modal-box">
+            <h1 class="modal-title" style="color: #74c69d;">🎉 SAFARI COMPLETED!</h1>
+            <p class="modal-subtitle">All Zoo Information Plaques Fully Restored!</p>
+            <div class="question-text">
+                <h3 style="color: #f4a261; margin-bottom: 10px;">Grammar Mastery Report:</h3>
+                <div class="summary-stat">
+                    <span>Basic WH-Questions (Who, Where, When):</span>
+                    <strong style="color: #74c69d;">Mastered 🦁</strong>
+                </div>
+                <div class="summary-stat">
+                    <span>Quantities (How many vs. How much):</span>
+                    <strong style="color: #74c69d;">Mastered 🐘</strong>
+                </div>
+                <div class="summary-stat">
+                    <span>Complex Question Phrases (Whose, Which, How far):</span>
+                    <strong style="color: #74c69d;">Mastered 🐊</strong>
+                </div>
+                <div class="summary-stat">
+                    <span>Total Retries Needed:</span>
+                    <strong id="total-attempts-text" style="color: #f4a261;">0</strong>
+                </div>
+            </div>
+            <button class="btn" style="width: 100%; font-size: 16px; padding: 15px;" onclick="restartGame()">EXPLORE AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CURRICULUM QUESTION DATA (ZOO THEMED) ---
+        const questionsData = {
+            1: [
+                {
+                    q: "____ is taking care of the newborn giraffe calf in Sector 1?",
+                    options: ["Who", "Where", "When", "What"],
+                    correct: 0,
+                    hint: "This question asks about the person/zookeeper taking action.",
+                    explanation: "Correct! 'Who' is used when asking about a person."
+                },
+                {
+                    q: "____ is the giant panda habitat located in the zoo?",
+                    options: ["When", "Where", "Who", "Why"],
+                    correct: 1,
+                    hint: "This question asks about a place or physical location.",
+                    explanation: "Correct! 'Where' is used when asking about places or positions."
+                },
+                {
+                    q: "____ will the zookeeper feed the sea otters today?",
+                    options: ["Who", "Where", "When", "Which"],
+                    correct: 2,
+                    hint: "This question asks about time or schedule.",
+                    explanation: "Correct! 'When' is used when asking about time."
+                }
+            ],
+            2: [
+                {
+                    q: "____ bamboo shoots do the giant pandas eat each morning?",
+                    options: ["How much", "How many", "How long", "How far"],
+                    correct: 1,
+                    hint: "Bamboo shoots can be counted individually (1 shoot, 2 shoots...).",
+                    explanation: "Great job! 'How many' is used for countable nouns."
+                },
+                {
+                    q: "____ fresh water is needed to fill the hippo splash pool?",
+                    options: ["How many", "How much", "How far", "How often"],
+                    correct: 1,
+                    hint: "Water is an uncountable liquid.",
+                    explanation: "Spot on! 'How much' is used for uncountable nouns."
+                },
+                {
+                    q: "____ raw meat does a lion consume in one week?",
+                    options: ["How much", "How many", "How long", "Whose"],
+                    correct: 0,
+                    hint: "Meat as a mass/amount is uncountable unless specifying items like steaks.",
+                    explanation: "Correct! 'How much' is used for uncountable amounts."
+                }
+            ],
+            3: [
+                {
+                    q: "____ safari hat was left near the parrot aviary?",
+                    options: ["Whose", "Which", "How far", "Who"],
+                    correct: 0,
+                    hint: "This question asks who owns the safari hat.",
+                    explanation: "Excellent! 'Whose' is used to ask about possession or ownership."
+                },
+                {
+                    q: "____ tour path should we follow to see the zebras?",
+                    options: ["Whose", "Which", "How far", "How much"],
+                    correct: 1,
+                    hint: "This question presents a choice between specific paths.",
+                    explanation: "Correct! 'Which' is used when choosing between specific options."
+                },
+                {
+                    q: "____ is the lion enclosure from the main entrance gate?",
+                    options: ["How many", "How far", "Whose", "Which"],
+                    correct: 1,
+                    hint: "This question asks about distance between locations.",
+                    explanation: "Correct! 'How far' is used to inquire about distance."
+                }
+            ]
+        };
+
+        // --- ENGINE & GAME STATE ---
+        let scene, camera, renderer;
+        let player;
+        let walls = [], gates = [], consoles = [];
+        let particles;
+        let currentSector = 1;
+        let activeConsoleIndex = -1;
+        let currentQuestionIdx = 0;
+        let totalRetries = 0;
+        let crystalsCollected = [false, false, false];
+        let gameStarted = false;
+        let questionAnswered = false;
+
+        // Controls State
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, e: false };
+        let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+        let cameraAngleY = 0;
+        let isMouseDown = false, mouseX = 0;
+
+        // --- GLOBAL EVENT HANDLERS ---
+        function startGame() {
+            gameStarted = true;
+            document.getElementById('start-screen').classList.remove('active');
+            updateHUDObjective("Locate Sector 1 Ranger Station");
+        }
+
+        function toggleInstructions() {
+            const modal = document.getElementById('instructions-modal');
+            modal.classList.toggle('active');
+        }
+
+        function triggerInteraction() {
+            if (activeConsoleIndex !== -1 && !crystalsCollected[activeConsoleIndex]) {
+                openChallengeModal(activeConsoleIndex + 1);
+            }
+        }
+
+        function showHint() {
+            const sectorQs = questionsData[currentSector];
+            const q = sectorQs[currentQuestionIdx];
+            const feedbackBox = document.getElementById('feedback-display');
+            feedbackBox.className = "feedback-box hint";
+            feedbackBox.innerHTML = `💡 <strong>Hint:</strong> ${q.hint}`;
+        }
+
+        function selectOption(index) {
+            if (questionAnswered) return;
+
+            const sectorQs = questionsData[currentSector];
+            const q = sectorQs[currentQuestionIdx];
+            const options = document.querySelectorAll('.btn-option');
+            const feedbackBox = document.getElementById('feedback-display');
+
+            if (index === q.correct) {
+                questionAnswered = true;
+                options[index].classList.add('selected-correct');
+                feedbackBox.className = "feedback-box correct";
+                feedbackBox.innerHTML = `✅ ${q.explanation}`;
+                document.getElementById('btn-next-q').style.display = "inline-block";
+            } else {
+                totalRetries++;
+                options[index].classList.add('selected-wrong');
+                feedbackBox.className = "feedback-box incorrect";
+                feedbackBox.innerHTML = "❌ Plaque error! Incorrect question word. Review hint and try again.";
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIdx++;
+            const sectorQs = questionsData[currentSector];
+
+            if (currentQuestionIdx < sectorQs.length) {
+                renderQuestion();
+            } else {
+                // Complete Sector
+                document.getElementById('challenge-modal').classList.remove('active');
+                completeSector(currentSector);
+            }
+        }
+
+        function completeSector(sector) {
+            crystalsCollected[sector - 1] = true;
+            document.getElementById(`crystal-${sector}`).classList.add(`active-s${sector}`);
+
+            // Open corresponding gate
+            if (gates[sector - 1]) {
+                gates[sector - 1].opened = true;
+            }
+
+            if (sector < 3) {
+                currentSector = sector + 1;
+                updateHUDObjective(`Proceed to Sector ${currentSector} Station`);
+            } else {
+                // Victory!
+                updateHUDObjective("Safari Expedition Completed!");
+                document.getElementById('total-attempts-text').innerText = totalRetries;
+                document.getElementById('end-screen').classList.add('active');
+            }
+        }
+
+        function restartGame() {
+            currentSector = 1;
+            totalRetries = 0;
+            crystalsCollected = [false, false, false];
+            
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById(`crystal-${i}`);
+                el.className = 'crystal-slot';
+            }
+
+            gates.forEach(g => {
+                g.opened = false;
+                g.mesh.position.y = g.initialY;
+            });
+
+            if (player) {
+                player.position.set(0, 0, -32);
+            }
+
+            document.getElementById('end-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+            gameStarted = false;
+        }
+
+        // Expose functions to window object explicitly
+        window.startGame = startGame;
+        window.toggleInstructions = toggleInstructions;
+        window.triggerInteraction = triggerInteraction;
+        window.showHint = showHint;
+        window.selectOption = selectOption;
+        window.nextQuestion = nextQuestion;
+        window.restartGame = restartGame;
+
+        // --- GAME ENGINE INITIALIZATION ---
+        window.onload = function() {
+            initEngine();
+        };
+
+        function initEngine() {
+            const container = document.getElementById('game-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb); // Warm sky blue
+            scene.fog = new THREE.FogExp2(0xaaccb5, 0.015);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Sunlight & Natural Ambient Lighting
+            const ambientLight = new THREE.AmbientLight(0xfff3e0, 1.4);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.6);
+            sunLight.position.set(40, 60, 30);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            scene.add(sunLight);
+
+            const skyLight = new THREE.HemisphereLight(0x87ceeb, 0x2d6a4f, 0.6);
+            scene.add(skyLight);
+
+            // Warm Sector Lanterns
+            const light1 = new THREE.PointLight(0x74c69d, 3, 35);
+            light1.position.set(15, 5, -28);
+            scene.add(light1);
+
+            const light2 = new THREE.PointLight(0xf4a261, 3, 35);
+            light2.position.set(-20, 5, -2);
+            scene.add(light2);
+
+            const light3 = new THREE.PointLight(0xe76f51, 3, 35);
+            light3.position.set(-5, 5, 22);
+            scene.add(light3);
+
+            buildZooMaze();
+            buildFoliageAndTrees();
+            buildPlayer();
+
+            window.addEventListener('resize', onWindowResize);
+            setupInputControls();
+            
+            animate();
+        }
+
+        function buildZooMaze() {
+            // Natural Grass Floor
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x3a7d44, roughness: 0.8, metalness: 0.1 });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), grassMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Dirt Pathway grid overlays for sectors
+            const gridHelper = new THREE.GridHelper(100, 25, 0xd4a373, 0x52b788);
+            gridHelper.position.y = 0.02;
+            scene.add(gridHelper);
+
+            // Sector Floor Accent Paths
+            const sector1Floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(60, 30),
+                new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.7, transparent: true, opacity: 0.4 })
+            );
+            sector1Floor.rotation.x = -Math.PI / 2;
+            sector1Floor.position.set(0, 0.03, -25);
+            scene.add(sector1Floor);
+
+            const sector2Floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(60, 25),
+                new THREE.MeshStandardMaterial({ color: 0xbb9457, roughness: 0.7, transparent: true, opacity: 0.4 })
+            );
+            sector2Floor.rotation.x = -Math.PI / 2;
+            sector2Floor.position.set(0, 0.03, -2.5);
+            scene.add(sector2Floor);
+
+            const sector3Floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(60, 25),
+                new THREE.MeshStandardMaterial({ color: 0x9a031e, roughness: 0.7, transparent: true, opacity: 0.3 })
+            );
+            sector3Floor.rotation.x = -Math.PI / 2;
+            sector3Floor.position.set(0, 0.03, 22.5);
+            scene.add(sector3Floor);
+
+            // Hedge Maze Walls
+            const hedgeMat = new THREE.MeshStandardMaterial({ color: 0x1e4620, roughness: 0.9, metalness: 0.05 });
+            const woodTrimMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
+
+            const wallBoxes = [
+                { x: 0, z: -40, w: 60, h: 5, d: 2 },
+                { x: 0, z: 40, w: 60, h: 5, d: 2 },
+                { x: -30, z: 0, w: 2, h: 5, d: 80 },
+                { x: 30, z: 0, w: 2, h: 5, d: 80 },
+                { x: -10, z: -15, w: 40, h: 5, d: 2 },
+                { x: 10, z: 10, w: 40, h: 5, d: 2 }
+            ];
+
+            wallBoxes.forEach(b => {
+                const wallGeom = new THREE.BoxGeometry(b.w, b.h, b.d);
+                const wallMesh = new THREE.Mesh(wallGeom, hedgeMat);
+                wallMesh.position.set(b.x, b.h / 2, b.z);
+                wallMesh.castShadow = true;
+                wallMesh.receiveShadow = true;
+                scene.add(wallMesh);
+                walls.push(new THREE.Box3().setFromObject(wallMesh));
+
+                // Top Wooden Fence Beam Decoration
+                const trimGeom = new THREE.BoxGeometry(b.w > b.d ? b.w : b.d, 0.3, 0.3);
+                const trimTop = new THREE.Mesh(trimGeom, woodTrimMat);
+                if (b.w < b.d) trimTop.rotation.y = Math.PI / 2;
+                trimTop.position.set(b.x, b.h + 0.15, b.z);
+                scene.add(trimTop);
+            });
+
+            // Gates (Rustic Safari Wooden Fence Gates)
+            createGate(1, 15, 0, -15, 0x52b788);
+            createGate(2, -15, 0, 10, 0xf4a261);
+
+            // Information Stations (Plaques)
+            createConsole(1, 15, -28, 0x52b788, "🦁");
+            createConsole(2, -20, -2, 0xf4a261, "🐘");
+            createConsole(3, -5, 22, 0xe76f51, "🐊");
+        }
+
+        function createGate(id, x, y, z, color) {
+            const gateGroup = new THREE.Group();
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x6b4226, roughness: 0.7 });
+            const vineMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
+
+            // Posts
+            const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 5, 8), woodMat);
+            postL.position.set(-4.5, 2.5, 0);
+            gateGroup.add(postL);
+
+            const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 5, 8), woodMat);
+            postR.position.set(4.5, 2.5, 0);
+            gateGroup.add(postR);
+
+            // Barrier Energy / Vine Grid
+            const field = new THREE.Mesh(new THREE.PlaneGeometry(8, 4.5), vineMat);
+            field.position.set(0, 2.5, 0);
+            gateGroup.add(field);
+
+            gateGroup.position.set(x, y, z);
+            scene.add(gateGroup);
+
+            const gateBox = new THREE.Box3().setFromObject(field);
+            gates.push({ id: id, mesh: gateGroup, box: gateBox, opened: false, initialY: y });
+        }
+
+        function createConsole(sector, x, z, color, iconSymbol) {
+            const consoleGroup = new THREE.Group();
+
+            // Wooden Podiums
+            const baseMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.1, 1.4, 1.8, 12),
+                new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.8 })
+            );
+            baseMesh.position.y = 0.9;
+            consoleGroup.add(baseMesh);
+
+            // Plaque Sign Top
+            const topMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(1.6, 0.2, 1.2),
+                new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.4 })
+            );
+            topMesh.position.y = 1.9;
+            topMesh.rotation.x = 0.2;
+            consoleGroup.add(topMesh);
+
+            // Rotating Animal Badge / Gem
+            const gemMesh = new THREE.Mesh(
+                new THREE.OctahedronGeometry(0.6),
+                new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.3, emissive: color, emissiveIntensity: 0.4 })
+            );
+            gemMesh.position.y = 3.0;
+            consoleGroup.add(gemMesh);
+
+            consoleGroup.position.set(x, 0, z);
+            scene.add(consoleGroup);
+
+            consoles.push({
+                sector: sector,
+                mesh: consoleGroup,
+                gemMesh: gemMesh,
+                position: new THREE.Vector3(x, 0, z)
+            });
+        }
+
+        function buildFoliageAndTrees() {
+            // Trees scattered outside & inside corners
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.9 });
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.8 });
+
+            const treePositions = [
+                { x: -35, z: -35 }, { x: 35, z: -35 }, { x: -35, z: 35 }, { x: 35, z: 35 },
+                { x: -25, z: -25 }, { x: 25, z: 25 }, { x: -25, z: 15 }, { x: 25, z: -15 }
+            ];
+
+            treePositions.forEach(pos => {
+                const treeGroup = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 6, 8), trunkMat);
+                trunk.position.y = 3;
+                treeGroup.add(trunk);
+
+                const top = new THREE.Mesh(new THREE.DodecahedronGeometry(2.5, 1), foliageMat);
+                top.position.y = 6.5;
+                top.castShadow = true;
+                treeGroup.add(top);
+
+                treeGroup.position.set(pos.x, 0, pos.z);
+                scene.add(treeGroup);
+            });
+
+            // Floating Pollen / Leaves Particles
+            const pGeometry = new THREE.BufferGeometry();
+            const count = 350;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            const col1 = new THREE.Color(0x74c69d);
+            const col2 = new THREE.Color(0xf4a261);
+
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 160;
+                positions[i * 3 + 1] = Math.random() * 20 + 1;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 160;
+
+                const c = Math.random() > 0.5 ? col1 : col2;
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+
+            pGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            pGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const pMaterial = new THREE.PointsMaterial({ size: 0.8, vertexColors: true, transparent: true, opacity: 0.7 });
+            particles = new THREE.Points(pGeometry, pMaterial);
+            scene.add(particles);
+        }
+
+        function buildPlayer() {
+            // Safari Park Ranger Character
+            player = new THREE.Group();
+
+            const khakiMat = new THREE.MeshStandardMaterial({ color: 0xc2a649, roughness: 0.6 });
+            const vestMat = new THREE.MeshStandardMaterial({ color: 0x856a29, roughness: 0.5 });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.8 });
+            const bootMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 0.8 });
+
+            // Torso & Vest
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.7), vestMat);
+            torso.position.y = 1.25;
+            torso.castShadow = true;
+            player.add(torso);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), skinMat);
+            head.position.y = 2.15;
+            player.add(head);
+
+            // Safari Explorer Hat
+            const hatCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.45, 0.35, 12), khakiMat);
+            hatCrown.position.y = 2.5;
+            player.add(hatCrown);
+
+            const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.06, 16), khakiMat);
+            hatBrim.position.y = 2.38;
+            player.add(hatBrim);
+
+            // Boots
+            const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.4), bootMat);
+            bootL.position.set(-0.25, 0.25, 0.05);
+            player.add(bootL);
+
+            const bootR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.4), bootMat);
+            bootR.position.set(0.25, 0.25, 0.05);
+            player.add(bootR);
+
+            player.position.set(0, 0, -32);
+            scene.add(player);
+        }
+
+        function openChallengeModal(sector) {
+            currentQuestionIdx = 0;
+            document.getElementById('challenge-sector-title').innerText = `Sector ${sector} Zoo Plaque`;
+            renderQuestion();
+            document.getElementById('challenge-modal').classList.add('active');
+        }
+
+        function renderQuestion() {
+            questionAnswered = false;
+            const sectorQs = questionsData[currentSector];
+            const q = sectorQs[currentQuestionIdx];
+
+            document.getElementById('challenge-instruction').innerText = `Question ${currentQuestionIdx + 1} of ${sectorQs.length}`;
+            document.getElementById('challenge-question').innerText = q.q;
+            document.getElementById('btn-next-q').style.display = "none";
+            
+            const feedbackBox = document.getElementById('feedback-display');
+            feedbackBox.className = "feedback-box";
+            feedbackBox.style.display = "none";
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerHTML = `<span><strong>${String.fromCharCode(65 + idx)}.</strong> ${opt}</span>`;
+                btn.onclick = () => selectOption(idx);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function updateHUDObjective(msg) {
+            document.getElementById('objective-text').innerText = msg;
+        }
+
+        function setupInputControls() {
+            window.addEventListener('keydown', e => {
+                if (e.key in keys) keys[e.key] = true;
+                if (e.key === 'w' || e.key === 'W') keys.w = true;
+                if (e.key === 'a' || e.key === 'A') keys.a = true;
+                if (e.key === 's' || e.key === 'S') keys.s = true;
+                if (e.key === 'd' || e.key === 'D') keys.d = true;
+                if (e.key === 'e' || e.key === 'E') triggerInteraction();
+            });
+
+            window.addEventListener('keyup', e => {
+                if (e.key in keys) keys[e.key] = false;
+                if (e.key === 'w' || e.key === 'W') keys.w = false;
+                if (e.key === 'a' || e.key === 'A') keys.a = false;
+                if (e.key === 's' || e.key === 'S') keys.s = false;
+                if (e.key === 'd' || e.key === 'D') keys.d = false;
+            });
+
+            window.addEventListener('mousedown', e => {
+                isMouseDown = true;
+                mouseX = e.clientX;
+            });
+
+            window.addEventListener('mouseup', () => isMouseDown = false);
+
+            window.addEventListener('mousemove', e => {
+                if (isMouseDown) {
+                    const deltaX = e.clientX - mouseX;
+                    cameraAngleY -= deltaX * 0.005;
+                    mouseX = e.clientX;
+                }
+            });
+
+            // Touch Joystick
+            const joystickZone = document.getElementById('joystick-zone');
+            const joystickKnob = document.getElementById('joystick-knob');
+
+            joystickZone.addEventListener('touchstart', e => {
+                touchJoystick.active = true;
+                const touch = e.touches[0];
+                const rect = joystickZone.getBoundingClientRect();
+                touchJoystick.startX = rect.left + rect.width / 2;
+                touchJoystick.startY = rect.top + rect.height / 2;
+            });
+
+            window.addEventListener('touchmove', e => {
+                if (!touchJoystick.active) return;
+                const touch = e.touches[0];
+                let dx = touch.clientX - touchJoystick.startX;
+                let dy = touch.clientY - touchJoystick.startY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxDist = 35;
+
+                if (dist > maxDist) {
+                    dx = (dx / dist) * maxDist;
+                    dy = (dy / dist) * maxDist;
+                }
+
+                joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                touchJoystick.moveX = dx / maxDist;
+                touchJoystick.moveY = dy / maxDist;
+            });
+
+            window.addEventListener('touchend', () => {
+                touchJoystick.active = false;
+                touchJoystick.moveX = 0;
+                touchJoystick.moveY = 0;
+                joystickKnob.style.transform = `translate(0px, 0px)`;
+            });
+
+            if ('ontouchstart' in window) {
+                document.getElementById('btn-mobile-interact').style.display = 'flex';
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameStarted && player) {
+                // Movement logic
+                let moveX = 0;
+                let moveZ = 0;
+
+                if (keys.w || keys.ArrowUp) moveZ -= 1;
+                if (keys.s || keys.ArrowDown) moveZ += 1;
+                if (keys.a || keys.ArrowLeft) moveX -= 1;
+                if (keys.d || keys.ArrowRight) moveX += 1;
+
+                if (touchJoystick.active) {
+                    moveX = touchJoystick.moveX;
+                    moveZ = touchJoystick.moveY;
+                }
+
+                if (moveX !== 0 || moveZ !== 0) {
+                    const speed = 0.22;
+                    const direction = new THREE.Vector3(moveX, 0, moveZ).normalize();
+                    direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAngleY);
+
+                    const newPosX = player.position.x + direction.x * speed;
+                    const newPosZ = player.position.z + direction.z * speed;
+
+                    // Wall collision check
+                    let collide = false;
+                    const playerBox = new THREE.Box3().setFromCenterAndSize(
+                        new THREE.Vector3(newPosX, 1, newPosZ),
+                        new THREE.Vector3(1.2, 2, 1.2)
+                    );
+
+                    for (let w of walls) {
+                        if (playerBox.intersectsBox(w)) {
+                            collide = true;
+                            break;
+                        }
+                    }
+
+                    for (let g of gates) {
+                        if (!g.opened && playerBox.intersectsBox(g.box)) {
+                            collide = true;
+                            break;
+                        }
+                    }
+
+                    if (!collide) {
+                        player.position.x = newPosX;
+                        player.position.z = newPosZ;
+                    }
+
+                    player.rotation.y = Math.atan2(direction.x, direction.z);
+                }
+
+                // Check proximity to stations/consoles
+                let nearConsole = false;
+                activeConsoleIndex = -1;
+
+                consoles.forEach((c, idx) => {
+                    const dist = player.position.distanceTo(c.position);
+                    if (dist < 3.5 && !crystalsCollected[idx]) {
+                        nearConsole = true;
+                        activeConsoleIndex = idx;
+                    }
+                    if (c.gemMesh) {
+                        c.gemMesh.rotation.y += 0.03;
+                    }
+                });
+
+                const prompt = document.getElementById('interaction-prompt');
+                prompt.style.display = nearConsole ? 'block' : 'none';
+
+                // Camera follow
+                const camOffset = new THREE.Vector3(0, 8, 14);
+                camOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAngleY);
+                camera.position.copy(player.position).add(camOffset);
+                camera.lookAt(player.position.x, player.position.y + 1.5, player.position.z);
+            }
+
+            // Animate gates opening (lowering barrier)
+            gates.forEach(g => {
+                if (g.opened && g.mesh.position.y < 8) {
+                    g.mesh.position.y += 0.1;
+                }
+            });
+
+            // Animate floating pollen/leaf particles
+            if (particles) {
+                particles.rotation.y += 0.001;
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
